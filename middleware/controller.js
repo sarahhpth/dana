@@ -29,9 +29,8 @@ exports.register = function(req, res){
     // raw json request body must be written in this format
     // {
     //     "nama_user": "usersarah2",
-    //     "no_hp":"usersarah2@gmail.com",
+    //     "no_hp":"081234",
     //     "pass": "test1234"
-        
     // }
                         
     // check if the account has already registered, using this query
@@ -57,8 +56,9 @@ exports.register = function(req, res){
                     }
                 });
             }else{
+                // if post.no_hpr is found
                 console.log("Phone number is already registered to Dana");
-                response.failed("Phone number is already registered to Dana", res); //else if found
+                response.failed("Phone number is already registered to Dana", res); 
             }
         }
     });
@@ -68,12 +68,18 @@ exports.register = function(req, res){
 exports.login = function(req, res){
     //req
     var post = {
-        email : req.body.email,
+        no_hp : req.body.no_hp,
         password : req.body.pass
     }
 
+    // raw json request body must be written in this format
+    // {
+    //     "no_hp":"081234",
+    //     "pass": "test1234"
+    // }
+
     var query = "SELECT * FROM users WHERE ?? = ? AND ?? = ?";
-    var table = ["password", post.password, "email", post.email];   // md5(post.password) if hashed
+    var table = ["password", post.password, "no_hp", post.no_hp];   // md5(post.password) if hashed
     query = mysql.format(query, table);
 
     conn.query(query, function(error, rows){
@@ -81,34 +87,35 @@ exports.login = function(req, res){
         console.log("test");
         if(error){
              
-            // response.success("error", res);
+            // response.success("error", res); 
         }else{
             if(rows.length == 1){
                 var token = jwt.sign({rows}, config.secret);
 
-                var user_id = rows[0].id;
-                var data = {
-                    user_id: user_id,
-                    access_token: token,
-                    ip_address: ip.address()
-                }
+                // parsed token looks like this:
+                // {
+                //     "rows": [
+                //       {
+                //         "id_user": 1,
+                //         "nama_user": "sarah",
+                //         "no_hp": 81234,
+                //         "password": "test1234",
+                //         "role": 2,
+                //         "balance": 0
+                //       }
+                //     ],
+                //     "iat": 1669953823
+                //   }
 
-                // var query = "INSERT INTO ?? SET ?";
-                // var table = ["token"]; 
-                // query = mysql.format(query, table);
+                var user_id = rows[0].id_user;
 
-                // conn.query(query, data, function(error, rows){
-                    if(error){
-                        console.log(error);
-                    }else{
-                        res.json({
-                            success: true,
-                            message: "Login successful",
-                            token: token,
-                            currUser: data.user_id
-                        });
-                    }
-                // });
+                res.json({
+                    success: true,
+                    message: "Login successful",
+                    token: token,
+                    currUser: user_id
+                });
+                    
             }else{
                 console.log("incorrect password/email");
                 res.json({
@@ -128,13 +135,26 @@ exports.topup = function(req, res){
     var token = req.headers.authorization;
     var topup = req.body.balance;
 
+    // insert token in Auth
+    // raw json request body must be written in this format
+    // {
+    //     "balance": "300000"
+    // }
+
     var data = parsetoken(token);
-    
-    // var data = parsedtoken.rows[0];
     // console.log(data);
-    var id = data.id;
+    // {
+    //     id_user: 1,
+    //     nama_user: 'sarah',
+    //     no_hp: 81234,
+    //     password: 'test1234',
+    //     role: 2,
+    //     balance: 0
+    // }
+
+    var user_id = data.id_user;
     
-    conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [topup, id],
+    conn.query('UPDATE users SET balance = balance + ? WHERE id_user = ?', [topup, user_id],
         function(error, rows, fields){
             if(error){
                 console.log(error);
@@ -144,44 +164,69 @@ exports.topup = function(req, res){
         });
 };
 
+
+
 //PUT transfer
 exports.transfer = function(req, res){
     //req
-    var receiver_email = req.body.email; //receiver's email
+    var receiver_hp = req.body.receiver_hp; //receiver's phone
     var amount = req.body.balance;
     var token = req.headers.authorization;
 
-    var data = parsetoken(token);
-    // var data = parsedtoken.rows[0];
-    
-    var sender_id = data.id;
-    var sender_name = data.name;
+    // insert token in Auth
+    // raw json request body must be written in this format
+    // {
+    //     "receiver_hp": "081235",
+    //     "balance": "25000"
+    // }
 
-    conn.query('SELECT id, name FROM users WHERE email = ?', [receiver_email], function(error, rows, fields){
-        var receiver_id = rows[0].id;
-        var receiver_name = rows[0].name;
+    var data = parsetoken(token);
+    // console.log(data);
+    // {
+    //     id_user: 1,
+    //     nama_user: 'sarah',
+    //     no_hp: 81234,
+    //     password: 'test1234',
+    //     role: 2,
+    //     balance: 0
+    // }
+    
+    var sender_id = data.id_user;
+    var sender_name = data.nama_user;
+
+    conn.query('SELECT id_user, nama_user FROM users WHERE no_hp = ?', [receiver_hp], function(error, rows, fields){
+        var receiver_id = rows[0].id_user;
+        var receiver_name = rows[0].nama_user;
         if(error){
             console.log(error);
         }else if(sender_id == receiver_id){
             response.failed("You cannot transfer to yourself", res);
         }else{
             //cek saldo sender
-            conn.query('SELECT balance from users WHERE id = ?',[sender_id],
+            conn.query('SELECT balance from users WHERE id_user = ?',[sender_id],
                 function(error, rows, fields){
                     var sender_balance = rows[0].balance
                     if(sender_balance < amount){
                         response.failed("Topup first", res);
                     }else{
-                        conn.query('UPDATE users SET balance = balance - ? WHERE id = ? ;'+
-                        'UPDATE users SET balance = balance + ? WHERE id = ? ;'+
-                        'INSERT INTO transactions (sender_id,receiver_id,sender,receiver,amount) VALUES (?,?,?,?,?)',
-                        [amount, sender_id, amount, receiver_id, 
-                            sender_id, receiver_id, sender_name, receiver_name, amount],
+                        conn.query('UPDATE users SET balance = balance - ? WHERE id_user = ? ;'+
+                        'UPDATE users SET balance = balance + ? WHERE id_user = ? ;'+
+                        'INSERT INTO transaksi (id_pengirim, id_penerima, pengirim, penerima, jumlah) VALUES (?,?,?,?,?)',
+                        [   amount, sender_id, 
+                            amount, receiver_id, 
+                            sender_id, receiver_id, sender_name, receiver_name, amount
+                        ],
                         function(error, rows, fields){
                             if(error){
                                 console.log(error);
+                                // var error_status = "ERROR";
+                                // conn.query('INSERT INTO transaksi SET status = ?', [error_status],
+                                //     function(error, rows, fields){});
                             }else{
                                 response.success("Transfered successfully", res);
+                                // var success_status = "SUCCESS";
+                                // conn.query('INSERT INTO transaksi SET status = ?', [success_status],
+                                //     function(error, rows, fields){});
                             }
                         
                         });
