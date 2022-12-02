@@ -7,50 +7,58 @@ var mysql = require('mysql');
 var jwt = require('jsonwebtoken');
 var config = require('../config/secret');
 var ip = require('ip');
-let referralCodeGenerator = require('referral-code-generator');
-
+let referralCodeGenerator = require('referral-code-generator'); // generate nomor_wallet
 var parsetoken = require('./parseJWT'); //used once already logged in
 
 //GET index
 exports.index = function(req, res){
-    response.success("Connected to Moneygo yeyyyyy", res)
+    response.success("Semoga pas demo ga error yhhhhhhh", res)
 };
 
 //POST register
 exports.register = function(req, res){
     //req
     var post = {
-        name : req.body.name,
-        email : req.body.email,
+        nama_user : req.body.nama_user,
+        no_hp : req.body.no_hp,
         password : req.body.pass,   //md5(req.body.password)
-        balance : '0' //leave blank
+        role : '2', // role user 2, admin 1. leave blank
+        balance : '0' // also leave blank
     }
-                                         
-    var query = "SELECT email FROM users WHERE ?? = ?"; //double "??" for sql query, single "?" for variable
-    var table = ["email", post.email];
+
+    // raw json request body must be written in this format
+    // {
+    //     "nama_user": "usersarah2",
+    //     "no_hp":"usersarah2@gmail.com",
+    //     "pass": "test1234"
+        
+    // }
+                        
+    // check if the account has already registered, using this query
+    var query = "SELECT no_hp FROM users WHERE ?? = ?"; //double "??" for sql query, single "?" for variable
+    var table = ["no_hp", post.no_hp];
     query = mysql.format(query, table);
 
     conn.query(query, function(error, rows){
         if(error){
-            console.log(error);
+            console.log(error); // if query error
         }else{
-            if(rows.length == 0){   //post.email is not found in db
-                var nomor_wallet = referralCodeGenerator.alphaNumeric('lowercase', 8, 7);
-
-                var query = "INSERT INTO users (name, email, password, nomor_wallet, balance) VALUES (?, ?, ?, ?, ?)";     
-                var table = [post.name, post.email, post.password, nomor_wallet, post.balance];
+            if(rows.length == 0){   // post.no_hp is not found in db
+    
+                var query = "INSERT INTO users (nama_user, no_hp, password, role, balance) VALUES (?, ?, ?, ?, ?)";     
+                var table = [post.nama_user, post.no_hp, post.password, post.role, post.balance];
 
                 conn.query(query, table, function(error, rows){
                     if(error){
-                        console.log(error);
+                        console.log(error); // if query error
                     }else{
-                        console.log("Email is already registered to moneygo");
+                        console.log("Registered");
                         response.success("Registered", res);
                     }
                 });
             }else{
-                console.log("Email is already registered to moneygo");
-                response.failed("Email is already registered to moneygo", res); //else if found
+                console.log("Phone number is already registered to Dana");
+                response.failed("Phone number is already registered to Dana", res); //else if found
             }
         }
     });
