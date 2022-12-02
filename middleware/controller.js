@@ -22,7 +22,6 @@ exports.register = function(req, res){
         nama_user : req.body.nama_user,
         no_hp : req.body.no_hp,
         password : req.body.pass,   //md5(req.body.password)
-        role : '2', // role user 2, admin 1. leave blank
         balance : '0' // also leave blank
     }
 
@@ -44,8 +43,8 @@ exports.register = function(req, res){
         }else{
             if(rows.length == 0){   // post.no_hp is not found in db
     
-                var query = "INSERT INTO users (nama_user, no_hp, password, role, balance) VALUES (?, ?, ?, ?, ?)";     
-                var table = [post.nama_user, post.no_hp, post.password, post.role, post.balance];
+                var query = "INSERT INTO users (nama_user, no_hp, password, balance) VALUES (?, ?, ?, ?)";     
+                var table = [post.nama_user, post.no_hp, post.password, post.balance];
 
                 conn.query(query, table, function(error, rows){
                     if(error){
@@ -63,6 +62,9 @@ exports.register = function(req, res){
         }
     });
 };
+
+
+
 
 //POST login
 exports.login = function(req, res){
@@ -166,7 +168,7 @@ exports.topup = function(req, res){
 
 
 
-//PUT transfer
+//POST transfer
 exports.transfer = function(req, res){
     //req
     var receiver_hp = req.body.receiver_hp; //receiver's phone
@@ -211,7 +213,7 @@ exports.transfer = function(req, res){
                     }else{
                         conn.query('UPDATE users SET balance = balance - ? WHERE id_user = ? ;'+
                         'UPDATE users SET balance = balance + ? WHERE id_user = ? ;'+
-                        'INSERT INTO transaksi (id_pengirim, id_penerima, pengirim, penerima, jumlah) VALUES (?,?,?,?,?)',
+                        'INSERT INTO transaksi (id_pengirim, id_penerima, pengirim, penerima, jumlah, status) VALUES (?,?,?,?,?, 1)',
                         [   amount, sender_id, 
                             amount, receiver_id, 
                             sender_id, receiver_id, sender_name, receiver_name, amount
@@ -219,14 +221,8 @@ exports.transfer = function(req, res){
                         function(error, rows, fields){
                             if(error){
                                 console.log(error);
-                                // var error_status = "ERROR";
-                                // conn.query('INSERT INTO transaksi SET status = ?', [error_status],
-                                //     function(error, rows, fields){});
                             }else{
                                 response.success("Transfered successfully", res);
-                                // var success_status = "SUCCESS";
-                                // conn.query('INSERT INTO transaksi SET status = ?', [success_status],
-                                //     function(error, rows, fields){});
                             }
                         
                         });
@@ -239,26 +235,48 @@ exports.transfer = function(req, res){
 
 };
 
-//POST transaksi/pembayaran
+//POST transaksi/pembayaran ke Tix ID
 exports.transaksi = function(req, res){
     //req
-    var amount = req.body.balance;
+    var amount = req.body.price;
     var token = req.headers.authorization;
 
+    // insert token in Auth
+    // raw json request body must be written in this format
+    // {
+    //     "price": "25000"
+    // }
+
     var data = parsetoken(token);
-    // var data = parsedtoken.rows[0];
+    // console.log(data);
+    // {
+    //     id_user: 1,
+    //     nama_user: 'sarah',
+    //     no_hp: 81234,
+    //     password: 'test1234',
+    //     role: 2,
+    //     balance: 0
+    // }
     
-    var user_id = data.id;
+    var user_id = data.id_user;
+    var user_name = data.nama_user;
 
     //cek saldo sender
-    conn.query('SELECT balance from users WHERE id = ?',[user_id],
+    conn.query('SELECT balance from users WHERE id_user = ?',[user_id],
         function(error, rows, fields){
-            var user_balance = rows[0].balance
+            var user_balance = rows[0].balance;
             if(user_balance < amount){
                 response.failed("Topup first", res);
             }else{
-                conn.query('UPDATE users SET balance = balance - ? WHERE id = ?',
-                [amount, user_id],
+                
+                conn.query('UPDATE users SET balance = balance - ? WHERE id_user = ? ;' + 
+                'UPDATE users SET balance = balance + ? WHERE id_user = 1 ;'+
+                'INSERT INTO transaksi (id_pengirim, id_penerima, pengirim, penerima, jumlah, status) VALUES (?,1,?,"tixid",?, 1)',
+                [
+                    amount, user_id,
+                    amount,
+                    user_id, user_name, amount
+                ],
                 function(error, rows, fields){
                     if(error){
                         console.log(error);
@@ -283,21 +301,28 @@ exports.profile = function(req, res){
     var token = req.headers.authorization;
 
     var data = parsetoken(token);
-    // var data = parsedtoken.rows[0];
+    // console.log(data);
+    // {
+    //     id_user: 1,
+    //     nama_user: 'sarah',
+    //     no_hp: 81234,
+    //     password: 'test1234',
+    //     role: 2,
+    //     balance: 0
+    // }
 
-    var id = data.id;
+    var id = data.id_user;
     
-    conn.query('SELECT * FROM users WHERE id = ?', [id],
+    conn.query('SELECT * FROM users WHERE id_user = ?', [id],
         function(error, rows, fields){
             if(error){
                 console.log(error);
             }else{
                 res.json({
-                    id: rows[0].id,
-                    name: rows[0].name,
-                    email: rows[0].email,
+                    id: rows[0].id_user,
+                    name: rows[0].nama_user,
+                    no_hp: rows[0].no_hp,
                     password: rows[0].password,
-                    nomor_wallet: rows[0].nomor_wallet,
                     balance: rows[0].balance,
                     // "id": data.id,
                     // "name": data.name,
