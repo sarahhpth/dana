@@ -13,5 +13,6 @@ router.put('/topup', verifikasi(), controller.topup)
 router.post('/transfer', verifikasi(), controller.transfer)
 router.post('/transaksi', verifikasi(), controller.transaksi)
 router.get('/profile', verifikasi(), controller.profile)
+router.get('/history', verifikasi(), controller.history)
 
 module.exports = router;

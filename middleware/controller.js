@@ -324,11 +324,7 @@ exports.profile = function(req, res){
                     no_hp: rows[0].no_hp,
                     password: rows[0].password,
                     balance: rows[0].balance,
-                    // "id": data.id,
-                    // "name": data.name,
-                    // "email": data.email,
-                    // "password": data.password,
-                    // "balance": data.balance
+                    
                 });
                 // console.log(data);
                 // res.json(data);
@@ -342,6 +338,47 @@ exports.profile = function(req, res){
 
 
 
+//GET history
+exports.history = function(req, res){
+    //req
+    var token = req.headers.authorization;
+
+    var data = parsetoken(token);
+    // console.log(data);
+    // {
+    //     id_user: 1,
+    //     nama_user: 'sarah',
+    //     no_hp: 81234,
+    //     password: 'test1234',
+    //     role: 2,
+    //     balance: 0
+    // }
+
+    var id = data.id_user;
+    
+    conn.query('SELECT * FROM transaksi WHERE id_pengirim = ?', [id],
+        function(error, rows, fields){
+            if(error){
+                console.log(error);
+            }else if(rows.length == 0){
+                response.failed("You have not made any transactions yet", res);
+                
+            }else{
+                console.log(rows.length);
+                var history = [];
+                rows.forEach(element => {
+                    
+                    history.push(element);
+                });
+                console.log(history);
+                response.success(history, res);
+
+                
+            }
+    });
+    
+  
+};
 
 
 
