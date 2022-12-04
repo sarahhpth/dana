@@ -264,36 +264,32 @@ exports.transaksi = function(req, res){
     //cek saldo sender
     conn.query('SELECT balance from users WHERE id_user = ?',[user_id],
         function(error, rows, fields){
-            var user_balance = rows[0].balance;
-            if(user_balance < amount){
-                response.failed("Topup first", res);
-            }else{
-                
-                conn.query('UPDATE users SET balance = balance - ? WHERE id_user = ? ;' + 
-                'UPDATE users SET balance = balance + ? WHERE id_user = 1 ;'+
-                'INSERT INTO transaksi (id_pengirim, id_penerima, pengirim, penerima, jumlah, status) VALUES (?,1,?,"tixid",?, 1)',
-                [
-                    amount, user_id,
-                    amount,
-                    user_id, user_name, amount
-                ],
-                function(error, rows, fields){
-                    if(error){
-                        console.log(error);
-                    }else{
-                        response.success("Payment successful", res);
-                    }
-                
-                });
-            }
+        var user_balance = rows[0].balance;
+        if(user_balance < amount){
+            response.failed("Topup first", res);
+        }else{
+            
+            conn.query('UPDATE users SET balance = balance - ? WHERE id_user = ? ;' + 
+            'UPDATE users SET balance = balance + ? WHERE id_user = 1 ;'+
+            'INSERT INTO transaksi (id_pengirim, id_penerima, pengirim, penerima, jumlah, status) VALUES (?,1,?,"tixid",?, 1)',
+            [
+                amount, user_id,
+                amount,
+                user_id, user_name, amount
+            ],
+            function(error, rows, fields){
+                if(error){
+                    console.log(error);
+                }else{
+                    response.success("Payment successful", res);
+                }
+            
+            });
+        }
 
     });
         
-
-    
-
 };
-
 
 //GET profile
 exports.profile = function(req, res){
@@ -336,8 +332,6 @@ exports.profile = function(req, res){
 };
 
 
-
-
 //GET history
 exports.history = function(req, res){
     //req
@@ -368,6 +362,48 @@ exports.history = function(req, res){
                 var history = [];
                 rows.forEach(element => {
                     
+                    // history.push(element.pengirim);
+                    history.push(element);
+                });
+                console.log(history[1]);
+                response.success(history, res);
+
+                // for (var i = 0; i < rows.length; i++){
+                //     history.push(
+                //         rows[i].pengirim,
+                //         rows[i].penerima,
+                //         rows[i].jumlah,
+                //         rows[i].datetime
+
+                //     )
+                // }
+                // console.log(history);
+                // response.success(history, res);
+
+                
+            }
+    });
+    
+  
+};
+
+//GET history instance
+exports.history_inst = function(req, res){
+
+    var id = req.params.id;
+    
+    conn.query('SELECT * FROM transaksi WHERE id_transaksi = ?', [id],
+        function(error, rows, fields){
+            if(error){
+                console.log(error);
+            }else if(rows.length == 0){
+                response.failed("Transaction not found", res);
+                
+            }else{
+                console.log(rows.length);
+                var history = [];
+                rows.forEach(element => {
+                    
                     history.push(element);
                 });
                 console.log(history);
@@ -379,6 +415,13 @@ exports.history = function(req, res){
     
   
 };
+
+
+
+
+
+
+
 
 
 

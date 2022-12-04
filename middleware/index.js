@@ -14,5 +14,6 @@ router.post('/transfer', verifikasi(), controller.transfer)
 router.post('/transaksi', verifikasi(), controller.transaksi)
 router.get('/profile', verifikasi(), controller.profile)
 router.get('/history', verifikasi(), controller.history)
+router.get('/history/:id', verifikasi(), controller.history_inst)
 
 module.exports = router;
