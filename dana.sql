@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 01, 2022 at 04:24 PM
+-- Generation Time: Dec 05, 2022 at 05:22 AM
 -- Server version: 10.4.24-MariaDB
 -- PHP Version: 7.4.29
 
@@ -58,9 +58,21 @@ CREATE TABLE `transaksi` (
   `pengirim` varchar(30) NOT NULL,
   `penerima` varchar(30) NOT NULL,
   `jumlah` float NOT NULL,
-  `datetime` datetime NOT NULL,
-  `status` varchar(10) NOT NULL
+  `datetime` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` tinyint(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `transaksi`
+--
+
+INSERT INTO `transaksi` (`id_transaksi`, `id_pengirim`, `id_penerima`, `pengirim`, `penerima`, `jumlah`, `datetime`, `status`) VALUES
+(3, 3, 1, 'sarah', 'tixid', 10000, '2022-12-02 09:54:03', 1),
+(4, 3, 1, 'sarah', 'tixid', 5000, '2022-12-02 10:37:33', 1),
+(5, 3, 1, 'sarah', 'tixid', 5000, '2022-12-02 10:50:19', 1),
+(6, 3, 1, 'sarah', 'tixid', 5000, '2022-12-02 10:51:27', 1),
+(7, 4, 3, 'pontoh', 'sarah', 10000, '2022-12-04 03:30:41', 1),
+(8, 4, 1, 'pontoh', 'tixid', 10000, '2022-12-04 03:31:06', 1);
 
 -- --------------------------------------------------------
 
@@ -71,11 +83,19 @@ CREATE TABLE `transaksi` (
 CREATE TABLE `users` (
   `id_user` int(11) NOT NULL,
   `nama_user` varchar(30) NOT NULL,
-  `no_hp` int(11) NOT NULL,
+  `no_hp` varchar(100) NOT NULL,
   `password` varchar(20) NOT NULL,
-  `role` int(11) NOT NULL,
   `balance` float NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id_user`, `nama_user`, `no_hp`, `password`, `balance`) VALUES
+(1, 'tixid', '0812999', 'test123', 45000),
+(3, 'sarah', '081234', 'test1234', 300000),
+(4, 'pontoh', '081235', 'test1234', 380000);
 
 --
 -- Indexes for dumped tables
@@ -129,13 +149,13 @@ ALTER TABLE `token`
 -- AUTO_INCREMENT for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_transaksi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables

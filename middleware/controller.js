@@ -365,8 +365,11 @@ exports.history = function(req, res){
                     // history.push(element.pengirim);
                     history.push(element);
                 });
-                console.log(history[1]);
-                response.success(history, res);
+                // console.log(history[1]);
+                res.json({
+                    status: 200,
+                    history: history
+                });
 
                 // for (var i = 0; i < rows.length; i++){
                 //     history.push(
