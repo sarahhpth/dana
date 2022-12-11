@@ -350,7 +350,7 @@ exports.history = function(req, res){
 
     var id = data.id_user;
     
-    conn.query('SELECT * FROM transaksi WHERE id_pengirim = ?', [id],
+    conn.query('SELECT * FROM transaksi WHERE id_pengirim = ? OR id_penerima = ?', [id, id],
         function(error, rows, fields){
             if(error){
                 console.log(error);
